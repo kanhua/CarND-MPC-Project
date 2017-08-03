@@ -112,13 +112,6 @@ int main() {
                     vector<double> mpc_y_vals;
 
 
-
-                    //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
-                    // the points in the simulator are connected by a Green line
-
-                    msgJson["mpc_x"] = mpc_x_vals;
-                    msgJson["mpc_y"] = mpc_y_vals;
-
                     //Display the waypoints/reference line
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
@@ -164,35 +157,18 @@ int main() {
                     std::vector<double> delta_vals = {};
                     std::vector<double> a_vals = {};
 
-
                     auto vars = mpc.Solve(state, coeffs);
 
-                    x_vals.push_back(vars[0]);
-                    y_vals.push_back(vars[1]);
-                    psi_vals.push_back(vars[2]);
-                    v_vals.push_back(vars[3]);
-                    cte_vals.push_back(vars[4]);
-                    epsi_vals.push_back(vars[5]);
+                    steer_value = -vars[0] / deg2rad(25);
+                    throttle_value = vars[1];
 
-                    delta_vals.push_back(vars[6]);
-                    a_vals.push_back(vars[7]);
-
-                    state << vars[0], vars[1], vars[2], vars[3], vars[4], vars[5];
-                    std::cout << "x = " << vars[0] << std::endl;
-                    std::cout << "y = " << vars[1] << std::endl;
-                    std::cout << "psi = " << vars[2] << std::endl;
-                    std::cout << "v = " << vars[3] << std::endl;
-                    std::cout << "cte = " << vars[4] << std::endl;
-                    std::cout << "epsi = " << vars[5] << std::endl;
-                    std::cout << "delta = " << vars[6] << std::endl;
-                    std::cout << "a = " << vars[7] << std::endl;
-                    std::cout << std::endl;
-
-
-                    steer_value = -vars[6] / deg2rad(25);
-                    throttle_value = vars[7];
-
-
+                    for (int i = 2; i < vars.size(); i++) {
+                        if (i < (vars.size() + 2) / 2) {
+                            mpc_x_vals.push_back(vars[i]);
+                        } else {
+                            mpc_y_vals.push_back(vars[i]);
+                        }
+                    }
 
 
                     // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -203,6 +179,13 @@ int main() {
 
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;
+
+
+                    //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
+                    // the points in the simulator are connected by a Green line
+
+                    msgJson["mpc_x"] = mpc_x_vals;
+                    msgJson["mpc_y"] = mpc_y_vals;
 
 
                     auto msg = "42[\"steer\"," + msgJson.dump() + "]";

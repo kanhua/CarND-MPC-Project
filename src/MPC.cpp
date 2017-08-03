@@ -261,8 +261,17 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     //
     // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
     // creates a 2 element double vector.
-    return {solution.x[x_start + 1], solution.x[y_start + 1],
-            solution.x[psi_start + 1], solution.x[v_start + 1],
-            solution.x[cte_start + 1], solution.x[epsi_start + 1],
-            solution.x[delta_start], solution.x[a_start]};
+
+    vector<double> output;
+    output.push_back(solution.x[delta_start]);
+    output.push_back(solution.x[a_start]);
+
+    for (int i = x_start; i < N + x_start; i++) {
+        output.push_back(solution.x[i]);
+    }
+
+    for (int i = y_start; i < N + y_start; i++) {
+        output.push_back(solution.x[i]);
+    }
+    return output;
 }
