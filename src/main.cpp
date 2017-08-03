@@ -162,6 +162,9 @@ int main() {
                     steer_value = -vars[0] / deg2rad(25);
                     throttle_value = vars[1];
 
+                    // update the previous delta value to take into account latency
+                    mpc.prev_delta = vars[0];
+
                     for (int i = 2; i < vars.size(); i++) {
                         if (i < (vars.size() + 2) / 2) {
                             mpc_x_vals.push_back(vars[i]);

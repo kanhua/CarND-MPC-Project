@@ -8,6 +8,7 @@ using CppAD::AD;
 // TODO: Set the timestep length and duration
 size_t N = 10;
 double dt = 0.1;
+double latency = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -144,6 +145,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     //size_t i;
     typedef CPPAD_TESTVECTOR(double) Dvector;
 
+    int latency_index = floor(latency / dt);
 
     double x = state[0];
     double y = state[1];
@@ -183,8 +185,14 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // degrees (values in radians).
     // NOTE: Feel free to change this to something else.
     for (int i = delta_start; i < a_start; i++) {
-        vars_lowerbound[i] = -0.436332;
-        vars_upperbound[i] = 0.436332;
+
+        if (i < latency_index) {
+            vars_lowerbound[i] = prev_delta;
+            vars_upperbound[i] = prev_delta;
+        } else {
+            vars_lowerbound[i] = -0.436332;
+            vars_upperbound[i] = 0.436332;
+        }
 
     }
 
@@ -263,8 +271,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // creates a 2 element double vector.
 
     vector<double> output;
-    output.push_back(solution.x[delta_start]);
-    output.push_back(solution.x[a_start]);
+    output.push_back(solution.x[delta_start + 1]);
+    output.push_back(solution.x[a_start + 1]);
 
     for (int i = x_start; i < N + x_start; i++) {
         output.push_back(solution.x[i]);
