@@ -16,8 +16,8 @@ delta is the steering angle, a_t is the throttle, and L_f measures the distance 
 
 ## Timestep Length and Elapsed Duration (N & dt)
 
-
-
+The total elapsed duration (N*dt) should be long enough. Short total duration causes overfit of the optimization and fails to find an appropriate solution of steering and throttle. For the same N*dt,  
+larger N and smaller dt gives more accurate prediction than smaller N and larger dt, but more discretization also requires more computational resources. I found that N=10 and dt=0.01 work reasonably well on my computer. 
 
 ## Polynomial Fitting and MPC Preprocessing
 
@@ -35,6 +35,40 @@ for (int i = 0; i < ptsx.size(); i++) {
 }
 ```
 
+## Cost function
+
+The terms in the cost function can be divided into three categories:
+
+- Minimize the errors with the reference state.
+- Minimize the use of actuators.
+- Minimize the differences between the values of sequential throttle and steering angle.
+
+I found that adding more weight on the difference between sequential steering values gives better results. I choose 200 in my implementation. The code snippet of the cost function is shown as below:
+
+
+```cpp
+// The part of the cost based on the reference state.
+for (int t = 0; t < N; t++) {
+    fg[0] += CppAD::pow(vars[cte_start + t], 2);
+    fg[0] += CppAD::pow(vars[epsi_start + t], 2);
+    fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
+}
+
+// Minimize the use of actuators.
+for (int t = 0; t < N - 1; t++) {
+    fg[0] += CppAD::pow(vars[delta_start + t], 2);
+    fg[0] += CppAD::pow(vars[a_start + t], 2);
+}
+
+// Minimize the value gap between sequential actuations.
+for (int t = 0; t < N - 2; t++) {
+    fg[0] += 200 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+    fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+}
+
+```
+
+
 
 ## Model Predictive Control with Latency
 
@@ -45,8 +79,9 @@ For example, the following code snaps sets the range of delta based on this new 
 ```c
 for (int i = delta_start; i < a_start; i++) {
 
-    // Take into account latency
-    if (i < latency_index) {
+    // Take into account latency,
+    // we bound the first few points to its previous value
+    if ((i - delta_start) < latency_index) {
         vars_lowerbound[i] = prev_delta;
         vars_upperbound[i] = prev_delta;
     } else {
