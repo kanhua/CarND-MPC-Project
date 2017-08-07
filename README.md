@@ -2,8 +2,6 @@
 This project is part of Self-Driving Car Engineer Nanodegree Program.
 Details on how to run this project is [here](./install.md).
 
----
-
 ## The model
 
 The equation of motion of the vehicle is described as below.
