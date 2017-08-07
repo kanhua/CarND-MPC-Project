@@ -122,6 +122,7 @@ int main() {
                     Eigen::VectorXd way_x(ptsx.size());
                     Eigen::VectorXd way_y(ptsy.size());
 
+                    // Convert the "world" coordinates to "vehicle coordinates"
                     for (int i = 0; i < ptsx.size(); i++) {
                         double dx = ptsx[i] - px;
                         double dy = ptsy[i] - py;
@@ -164,6 +165,7 @@ int main() {
 
                     // update the previous delta value to take into account latency
                     mpc.prev_delta = vars[0];
+                    mpc.prev_a = vars[1];
 
                     for (int i = 2; i < vars.size(); i++) {
                         if (i < (vars.size() + 2) / 2) {

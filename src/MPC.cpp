@@ -35,7 +35,7 @@ class FG_eval {
 public:
     // Fitted polynomial coefficients
     Eigen::VectorXd coeffs;
-    double ref_v=50;
+    double ref_v = 50;
 
     FG_eval(Eigen::VectorXd coeffs) { this->coeffs = coeffs; }
 
@@ -58,12 +58,12 @@ public:
         // Minimize the use of actuators.
         for (int t = 0; t < N - 1; t++) {
             fg[0] += CppAD::pow(vars[delta_start + t], 2);
-            fg[0] += 10*CppAD::pow(vars[a_start + t], 2);
+            fg[0] += CppAD::pow(vars[a_start + t], 2);
         }
 
         // Minimize the value gap between sequential actuations.
         for (int t = 0; t < N - 2; t++) {
-            fg[0] += 600*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+            fg[0] += 200 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
             fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
         }
 
@@ -106,8 +106,8 @@ public:
             AD<double> delta0 = vars[delta_start + t - 1];
             AD<double> a0 = vars[a_start + t - 1];
 
-            AD<double> f0 = coeffs[0] + coeffs[1] * x0 +coeffs[2]*x0*x0+coeffs[3]*x0*x0*x0;
-            AD<double> psides0 = CppAD::atan(coeffs[1]+2*x0*coeffs[2]+3*x0*x0*coeffs[3]);
+            AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
+            AD<double> psides0 = CppAD::atan(coeffs[1] + 2 * x0 * coeffs[2] + 3 * x0 * x0 * coeffs[3]);
 
             // Here's `x` to get you started.
             // The idea here is to constraint this value to be 0.
@@ -161,7 +161,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // 4 * 10 + 2 * 9
     size_t n_vars = N * 6 + (N - 1) * 2;
     // TODO: Set the number of constraints
-    size_t n_constraints = N*6;
+    size_t n_constraints = N * 6;
 
     // Initial value of the independent variables.
     // SHOULD BE 0 besides initial state.
@@ -186,7 +186,9 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // NOTE: Feel free to change this to something else.
     for (int i = delta_start; i < a_start; i++) {
 
-        if (i < latency_index) {
+        // Take into account latency,
+        // we bound the first few points to its previous value
+        if ((i - delta_start) < latency_index) {
             vars_lowerbound[i] = prev_delta;
             vars_upperbound[i] = prev_delta;
         } else {
@@ -199,8 +201,17 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // Acceleration/decceleration upper and lower limits.
     // NOTE: Feel free to change this to something else.
     for (int i = a_start; i < n_vars; i++) {
-        vars_lowerbound[i] = -1.0;
-        vars_upperbound[i] = 1.0;
+
+
+        if ((i - a_start) < latency_index) {
+            vars_lowerbound[i] = prev_a;
+            vars_upperbound[i] = prev_a;
+
+        } else {
+
+            vars_lowerbound[i] = -1.0;
+            vars_upperbound[i] = 1.0;
+        }
     }
 
 
@@ -271,8 +282,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     // creates a 2 element double vector.
 
     vector<double> output;
-    output.push_back(solution.x[delta_start + 1]);
-    output.push_back(solution.x[a_start + 1]);
+    output.push_back(solution.x[delta_start + latency_index]);
+    output.push_back(solution.x[a_start + latency_index]);
 
     for (int i = x_start; i < N + x_start; i++) {
         output.push_back(solution.x[i]);
