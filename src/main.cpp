@@ -136,28 +136,20 @@ int main() {
 
                     Eigen::VectorXd coeffs = polyfit(way_x, way_y, 3);
 
-                    // NOTE: free feel to play around with these
+                    // set state in car's coordinate
                     double x = 0;
                     double y = 0;
+                    double car_psi = 0;
                     // The cross track error is calculated by evaluating at polynomial at x, f(x)
                     // and subtracting y.
                     double cte = polyeval(coeffs, x) - y;
                     // Due to the sign starting at 0, the orientation error is -f'(x).
                     // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
-                    double epsi = psi - atan(coeffs[1] + 2 * x * coeffs[2] + 3 * x * x * coeffs[3]);
+                    double epsi = -atan(coeffs[1] + 2 * x * coeffs[2] + 3 * x * x * coeffs[3]);
 
                     Eigen::VectorXd state(6);
-                    state << x, y, 0, v, cte, epsi;
-
-                    std::vector<double> x_vals = {state[0]};
-                    std::vector<double> y_vals = {state[1]};
-                    std::vector<double> psi_vals = {state[2]};
-                    std::vector<double> v_vals = {state[3]};
-                    std::vector<double> cte_vals = {state[4]};
-                    std::vector<double> epsi_vals = {state[5]};
-                    std::vector<double> delta_vals = {};
-                    std::vector<double> a_vals = {};
-
+                    state << x, y, car_psi, v, cte, epsi;
+                    
                     auto vars = mpc.Solve(state, coeffs);
 
                     steer_value = -vars[0] / deg2rad(25);
