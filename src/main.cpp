@@ -145,11 +145,11 @@ int main() {
                     double cte = polyeval(coeffs, x) - y;
                     // Due to the sign starting at 0, the orientation error is -f'(x).
                     // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
-                    double epsi = -atan(coeffs[1] + 2 * x * coeffs[2] + 3 * x * x * coeffs[3]);
+                    double epsi = car_psi - atan(coeffs[1] + 2 * x * coeffs[2] + 3 * x * x * coeffs[3]);
 
                     Eigen::VectorXd state(6);
                     state << x, y, car_psi, v, cte, epsi;
-                    
+
                     auto vars = mpc.Solve(state, coeffs);
 
                     steer_value = -vars[0] / deg2rad(25);
